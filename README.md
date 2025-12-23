@@ -2,7 +2,7 @@
 
 A lightweight syntax example generator for Lean 4. Produces unelaborated syntax trees from grammar definitions, useful for ML training data and property-based testing.
 
-[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://alokbeniwal.github.io/SyntaxGen/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://alok.github.io/SyntaxGen/)
 
 ## Quick Start
 
@@ -35,7 +35,7 @@ import SyntaxGen
 Add to your `lakefile.lean`:
 
 ```lean
-require SyntaxGen from git "https://github.com/alokbeniwal/SyntaxGen"@"main"
+require SyntaxGen from git "https://github.com/alok/SyntaxGen"@"main"
 ```
 
 Or `lakefile.toml`:
@@ -43,7 +43,7 @@ Or `lakefile.toml`:
 ```toml
 [[require]]
 name = "SyntaxGen"
-git = "https://github.com/alokbeniwal/SyntaxGen"
+git = "https://github.com/alok/SyntaxGen"
 rev = "main"
 ```
 
