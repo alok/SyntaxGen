@@ -26,7 +26,7 @@ partial def prettyPrint (stx : Syntax) : String := Id.run do
       else
         val
   | .ident _ _ name _ => name.toString
-  | .node _ kind args =>
+  | .node _ _kind args =>
       let parts := args.map prettyPrint |>.toList
       let nonEmpty := parts.filter (·.length > 0)
       joinParts nonEmpty
@@ -38,8 +38,8 @@ where
       if result.isEmpty then
         result := p
       else
-        let prev := if result.isEmpty then none else some (result.get ⟨result.length - 1⟩)
-        let curr := if p.isEmpty then none else some (p.get ⟨0⟩)
+        let prev := if result.isEmpty then none else some (String.Pos.Raw.get result ⟨result.length - 1⟩)
+        let curr := if p.isEmpty then none else some (String.Pos.Raw.get p ⟨0⟩)
         let needSpace := match (prev, curr) with
           | (some '(', _) => false
           | (some '[', _) => false
@@ -63,7 +63,7 @@ def compact (stx : Syntax) : String :=
 /-- Normalize syntax by removing redundant null nodes -/
 partial def normalize (stx : Syntax) : Syntax :=
   match stx with
-  | .node info `null #[single] => normalize single
+  | .node _info `null #[single] => normalize single
   | .node info kind args =>
       let args' := args.map normalize
       Syntax.node info kind args'

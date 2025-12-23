@@ -254,7 +254,7 @@ def extractPatternFromSyntaxCmd (stx : Syntax) : Option (Array Syntax × Name) :
     | _ => none
   -- Pattern is everything between (name := ...) and colon, excluding modifiers
   let mut patternParts : Array Syntax := #[]
-  let mut startIdx := 1  -- Skip "syntax" keyword
+  let _ := (1 : Nat)  -- Pattern starts after "syntax" keyword
   -- Skip optional (name := ...) and priority
   for i in [1:cIdx] do
     let arg := args[i]!
@@ -291,7 +291,7 @@ def elabSyntaxGenDecl : CommandElab := fun stx => do
 
   -- Extract pattern (everything between syntax_gen and :)
   let mut patternParts : Array Syntax := #[]
-  let mut startIdx := 1  -- Skip "syntax_gen"
+  let _ := (1 : Nat)  -- Pattern starts after "syntax_gen"
   -- Skip optional name and priority
   for i in [1:cIdx] do
     let arg := args[i]!

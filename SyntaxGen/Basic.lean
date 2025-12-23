@@ -101,7 +101,7 @@ def mkAtom (val : String) : Syntax := Syntax.atom .none val
 
 /-- Create identifier syntax -/
 def mkIdent' (name : String) : Syntax :=
-  Syntax.ident .none name.toSubstring name.toName []
+  Syntax.ident .none name.toRawSubstring name.toName []
 
 /-- Generate random identifier -/
 def genIdent : GenM Syntax := do
