@@ -14,12 +14,41 @@ open SyntaxGen SyntaxGen.Macro
 #syntaxgen tactic 5
 #syntaxgen command 3
 
+/-! ## Weighted Generation (More Realistic) -/
+
+-- Weighted generation produces more natural-looking examples
+#syntaxgen_weighted term 5
+#syntaxgen_weighted tactic 5
+
+/-! ## Pretty Printing -/
+
+-- Pretty-printed output with proper spacing
+#syntaxgen_pretty term 5
+
 /-! ## Template-based Generation -/
 
 -- Use predefined templates for custom syntax
 #gen_template listComp 5
 #gen_template point2d 3
 #gen_template myCheck 3
+
+/-! ## Shrinking for Property Testing -/
+
+-- Show shrink tree for generated syntax (useful for counterexample minimization)
+#syntaxgen_shrink term 42
+
+/-! ## Export & Statistics -/
+
+-- Show JSON Lines output
+#syntaxgen_jsonl term 5
+
+-- Statistics about generated samples
+#syntaxgen_stats term 20
+
+/-! ## Round-trip Testing -/
+
+-- Test: generate → format → parse
+#syntaxgen_roundtrip term 10
 
 /-! ## List Comprehension Example -/
 
@@ -84,6 +113,25 @@ This could integrate with Plausible for property-based testing:
 
 /-! ## Summary of Commands -/
 
+-- Basic generation
 -- #syntaxgen <category> [count]  -- Generate from built-in categories
+
+-- Enhanced generation
+-- #syntaxgen_weighted <category> [count]  -- Weighted (realistic) distribution
+-- #syntaxgen_pretty <category> [count]    -- Pretty-printed output
+-- #syntaxgen! <name> [count]              -- With auto-registry lookup
+
+-- Templates
 -- #gen_template <name> [count]   -- Generate from templates
--- #syntaxgen_list <category>     -- List all syntax kinds for a category
+-- syntax_gen <pattern> : <category> as <name>  -- Define & register generator
+
+-- Export (for ML training data)
+-- #syntaxgen_jsonl <category> [count]     -- JSON Lines format
+-- #syntaxgen_export <category> [count] to "file.jsonl"  -- Export to file
+-- #syntaxgen_batch [cat1, cat2] [count] to "file.jsonl" -- Batch export
+-- #syntaxgen_stats <category> [count]     -- Statistics
+
+-- Testing
+-- #syntaxgen_roundtrip <category> [count]         -- Round-trip test
+-- #syntaxgen_roundtrip_verbose <category> [count] -- Verbose round-trip
+-- #syntaxgen_shrink <category> [seed]             -- Shrink tree
