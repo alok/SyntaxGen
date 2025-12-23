@@ -1,1 +1,6 @@
 /.lake
+/_out
+*.olean
+*.ilean
+*.trace
+.DS_Store

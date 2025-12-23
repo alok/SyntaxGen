@@ -125,7 +125,7 @@ partial def parsePattern (stx : Syntax) : GenAST := Id.run do
   -- String literal → atom
   | .atom _ val =>
       if val.startsWith "\"" && val.endsWith "\"" then
-        .atom (val.drop 1 |>.dropRight 1)
+        .atom (val.drop 1 |>.dropEnd 1 |>.toString)
       else
         .atom val
 
@@ -153,7 +153,7 @@ where
     else if kind == `Lean.Parser.Syntax.atom then
       -- Atom like "foo" in syntax patterns
       match args[0]? with
-      | some (Lean.Syntax.atom _ val) => .atom (val.drop 1 |>.dropRight 1)  -- Remove quotes
+      | some (Lean.Syntax.atom _ val) => .atom (val.drop 1 |>.dropEnd 1 |>.toString)  -- Remove quotes
       | _ => .atom ""
 
     else if kind == `group || kind == `null then

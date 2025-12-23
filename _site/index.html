@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SyntaxGen - Lean 4 Syntax Generator</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --bg-light: #16213e;
+      --accent: #e94560;
+      --accent-light: #ff6b6b;
+      --text: #edf2f4;
+      --text-dim: #8d99ae;
+      --code-bg: #0f0f1a;
+      --border: #2a2a4a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg) 100%);
+      padding: 4rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .tagline {
+      font-size: 1.3rem;
+      color: var(--text-dim);
+      margin-top: 0.5rem;
+    }
+    .badges { margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    /* Navigation */
+    nav {
+      background: var(--bg-light);
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+    }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--accent); }
+
+    /* Main content */
+    main { padding: 3rem 0; }
+    section { margin-bottom: 4rem; }
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.5rem;
+      display: inline-block;
+    }
+    h3 {
+      font-size: 1.4rem;
+      margin: 2rem 0 1rem;
+      color: var(--text);
+    }
+    p { margin-bottom: 1rem; color: var(--text-dim); }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      background: var(--code-bg);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    pre code { background: none; padding: 0; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .comment { color: #676e95; }
+    .function { color: #82aaff; }
+    .number { color: #f78c6c; }
+
+    /* Cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .card {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .card h4 {
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    .card p { font-size: 0.95rem; margin: 0; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--bg-light);
+      color: var(--text);
+      font-weight: 600;
+    }
+    td { color: var(--text-dim); }
+    td code { color: var(--accent-light); }
+
+    /* Links */
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Footer */
+    footer {
+      background: var(--bg-light);
+      padding: 2rem 0;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    footer a { color: var(--accent); }
+
+    /* Quick start highlight */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>SyntaxGen</h1>
+      <p class="tagline">Lightweight syntax example generator for Lean 4</p>
+      <div class="badges">
+        <span class="badge">Lean 4</span>
+        <span class="badge">ML Training Data</span>
+        <span class="badge">Property Testing</span>
+        <span class="badge">MIT License</span>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="container">
+      <ul>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#commands">Commands</a></li>
+        <li><a href="#modules">Modules</a></li>
+        <li><a href="#examples">Examples</a></li>
+        <li><a href="https://github.com/alokbeniwal/SyntaxGen">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <section id="quickstart">
+        <h2>Quick Start</h2>
+        <p>SyntaxGen produces unelaborated syntax trees from grammar definitions, useful for generating ML training data and property-based testing.</p>
+
+        <h3>Installation</h3>
+        <p>Add to your <code>lakefile.lean</code>:</p>
+        <pre><code><span class="keyword">require</span> SyntaxGen <span class="keyword">from</span> git <span class="string">"https://github.com/alokbeniwal/SyntaxGen"</span>@<span class="string">"main"</span></code></pre>
+
+        <div class="highlight-box">
+          <h3>Basic Usage</h3>
+          <pre><code><span class="keyword">import</span> SyntaxGen
+
+<span class="comment">-- Generate examples for built-in categories</span>
+<span class="function">#syntaxgen</span> term <span class="number">5</span>
+<span class="function">#syntaxgen</span> tactic <span class="number">10</span>
+
+<span class="comment">-- Weighted generation (more realistic)</span>
+<span class="function">#syntaxgen_weighted</span> term <span class="number">10</span>
+
+<span class="comment">-- Export to JSON Lines for ML training</span>
+<span class="function">#syntaxgen_export</span> term <span class="number">1000</span> to <span class="string">"training.jsonl"</span>
+
+<span class="comment">-- Round-trip testing</span>
+<span class="function">#syntaxgen_roundtrip</span> term <span class="number">50</span></code></pre>
+        </div>
+      </section>
+
+      <section id="features">
+        <h2>Features</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h4>ML Training Export</h4>
+            <p>Export to JSON Lines or CSV with metadata (complexity, seed) for reproducible ML datasets.</p>
+          </div>
+          <div class="card">
+            <h4>Weighted Generation</h4>
+            <p>Probability-weighted sampling produces more realistic examples with simpler terms appearing more frequently.</p>
+          </div>
+          <div class="card">
+            <h4>Round-Trip Testing</h4>
+            <p>Verify parser correctness with generate → format → parse cycle testing.</p>
+          </div>
+          <div class="card">
+            <h4>Syntax Shrinking</h4>
+            <p>Minimize counterexamples for property-based testing with multiple shrinking strategies.</p>
+          </div>
+          <div class="card">
+            <h4>Template System</h4>
+            <p>Define generators for custom syntax using a simple template DSL.</p>
+          </div>
+          <div class="card">
+            <h4>Deterministic</h4>
+            <p>Reproducible generation with seed-based random number generation.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="commands">
+        <h2>Commands Reference</h2>
+
+        <h3>Core Generation</h3>
+        <table>
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>#syntaxgen &lt;cat&gt; [n]</code></td><td>Generate n examples from category</td></tr>
+          <tr><td><code>#syntaxgen_weighted &lt;cat&gt; [n]</code></td><td>Weighted generation (realistic)</td></tr>
+          <tr><td><code>#syntaxgen_pretty &lt;cat&gt; [n]</code></td><td>Pretty-printed output</td></tr>
+        </table>
+
+        <h3>ML Export</h3>
+        <table>
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>#syntaxgen_export &lt;cat&gt; [n] to "path"</code></td><td>Export to file (.jsonl, .csv)</td></tr>
+          <tr><td><code>#syntaxgen_batch [cats] [n] to "path"</code></td><td>Batch export multiple categories</td></tr>
+          <tr><td><code>#syntaxgen_jsonl &lt;cat&gt; [n]</code></td><td>Preview JSON Lines output</td></tr>
+          <tr><td><code>#syntaxgen_stats &lt;cat&gt; [n]</code></td><td>Show generation statistics</td></tr>
+        </table>
+
+        <h3>Testing</h3>
+        <table>
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>#syntaxgen_roundtrip &lt;cat&gt; [n]</code></td><td>Test generate → format → parse</td></tr>
+          <tr><td><code>#syntaxgen_roundtrip_verbose &lt;cat&gt; [n]</code></td><td>Verbose round-trip output</td></tr>
+          <tr><td><code>#syntaxgen_shrink &lt;cat&gt; [seed]</code></td><td>Show shrink tree</td></tr>
+        </table>
+
+        <h3>Templates</h3>
+        <table>
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>#gen_template &lt;name&gt; [n]</code></td><td>Generate from template</td></tr>
+          <tr><td><code>syntax_gen &lt;pattern&gt; : &lt;cat&gt; as &lt;name&gt;</code></td><td>Register custom generator</td></tr>
+        </table>
+      </section>
+
+      <section id="modules">
+        <h2>Modules</h2>
+        <table>
+          <tr><th>Module</th><th>Description</th></tr>
+          <tr><td><code>Basic</code></td><td>Core generator monad and built-in category generators</td></tr>
+          <tr><td><code>Weighted</code></td><td>Probability-weighted generation for realistic examples</td></tr>
+          <tr><td><code>Pretty</code></td><td>Enhanced pretty-printing with smart spacing</td></tr>
+          <tr><td><code>Export</code></td><td>JSON/CSV export for ML training datasets</td></tr>
+          <tr><td><code>RoundTrip</code></td><td>Parse round-trip testing</td></tr>
+          <tr><td><code>Shrink</code></td><td>Syntax shrinking for property testing</td></tr>
+          <tr><td><code>Auto</code></td><td>Automatic generator registration from patterns</td></tr>
+          <tr><td><code>Macro</code></td><td>Template-based generation</td></tr>
+        </table>
+      </section>
+
+      <section id="examples">
+        <h2>Examples</h2>
+
+        <h3>Custom List Comprehension</h3>
+        <pre><code><span class="keyword">import</span> SyntaxGen
+
+<span class="comment">-- Define syntax</span>
+<span class="keyword">syntax</span> <span class="string">"["</span> term <span class="string">"|"</span> term <span class="string">" in "</span> term (<span class="string">" if "</span> term)? <span class="string">"]"</span> : term
+
+<span class="comment">-- Macro rules</span>
+<span class="keyword">macro_rules</span>
+  | `([ $expr | $item in $items if $pred ]) =>
+      `(List.map (<span class="keyword">fun</span> $item => $expr) (List.filter (<span class="keyword">fun</span> $item => $pred) $items))
+  | `([ $expr | $item in $items ]) =>
+      `(List.map (<span class="keyword">fun</span> $item => $expr) $items)
+
+<span class="comment">-- Use template generator</span>
+<span class="function">#gen_template</span> listComp <span class="number">5</span></code></pre>
+
+        <h3>JSON Export Format</h3>
+        <pre><code>{<span class="string">"text"</span>: <span class="string">"fun x => x + 1"</span>, <span class="string">"category"</span>: <span class="string">"term"</span>, <span class="string">"complexity"</span>: <span class="number">5</span>, <span class="string">"seed"</span>: <span class="number">42</span>}</code></pre>
+
+        <h3>Plausible Integration</h3>
+        <p>SyntaxGen is designed to integrate with <a href="https://github.com/leanprover-community/plausible">Plausible</a> for property-based testing:</p>
+        <ul style="color: var(--text-dim); margin-left: 1.5rem;">
+          <li><code>Shrinkable Syntax</code> via the Shrink module</li>
+          <li>Round-trip tests for parser verification</li>
+          <li>Deterministic generation for reproducibility</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>SyntaxGen &copy; 2024 &middot; <a href="https://github.com/alokbeniwal/SyntaxGen">GitHub</a> &middot; MIT License</p>
+    </div>
+  </footer>
+</body>
+</html>
