@@ -1,6 +1,7 @@
 name = "SyntaxGen"
 version = "0.1.0"
 defaultTargets = ["SyntaxGen", "syntaxgen"]
+reservoir = false
 
 [leanOptions]
 pp.unicode.fun = true
