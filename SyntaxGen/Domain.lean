@@ -8,6 +8,7 @@ import SyntaxGen.Domain.Pools
 import SyntaxGen.Domain.Terms
 import SyntaxGen.Domain.Tactics
 import SyntaxGen.Domain.Structures
+import SyntaxGen.Domain.Maze
 import SyntaxGen.Pretty
 
 namespace SyntaxGen.Domain
