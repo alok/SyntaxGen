@@ -34,12 +34,12 @@ jobs:
           path: |
             ~/.elan
             .lake
-          key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.lean', 'lean-toolchain') }}
+          key: ${{ runner.os }}-lake-${{ hashFiles('lakefile.toml', 'lean-toolchain') }}
           restore-keys: |
             ${{ runner.os }}-lake-
 
       - name: Build library
-        run: lake build SyntaxGen
+        run: lake build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -16,7 +16,7 @@ and property-based testing.
 
 ## Quick Start
 
-```lean
+```
 import SyntaxGen
 
 -- Generate examples for built-in categories
@@ -41,19 +41,19 @@ import SyntaxGen
 
 ## Modules
 
-- `Basic`: Core generator monad and built-in category generators
-- `Weighted`: Probability-weighted generation for realistic examples
-- `Auto`: Automatic generator extraction from syntax patterns
-- `Macro`: Template-based generation for custom syntax
-- `Pretty`: Enhanced pretty-printing
-- `Export`: JSON/CSV export for ML datasets
-- `RoundTrip`: Parse round-trip testing
-- `Shrink`: Syntax shrinking for counterexample minimization
+- {lit}`Basic`: Core generator monad and built-in category generators
+- {lit}`Weighted`: Probability-weighted generation for realistic examples
+- {lit}`Auto`: Automatic generator extraction from syntax patterns
+- {lit}`Macro`: Template-based generation for custom syntax
+- {lit}`Pretty`: Enhanced pretty-printing
+- {lit}`Export`: JSON/CSV export for ML datasets
+- {lit}`RoundTrip`: Parse round-trip testing
+- {lit}`Shrink`: Syntax shrinking for counterexample minimization
 
 ## Plausible Integration
 
 Can integrate with [Plausible](https://github.com/leanprover-community/plausible):
-- `SampleableExt Syntax` for property-based testing
-- `Shrinkable Syntax` via the Shrink module
+- {lit}`SampleableExt Syntax` for property-based testing
+- {lit}`Shrinkable Syntax` via the Shrink module
 - Round-trip tests for parser verification
 -/

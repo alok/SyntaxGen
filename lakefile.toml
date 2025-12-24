@@ -1,0 +1,16 @@
+name = "SyntaxGen"
+version = "0.1.0"
+defaultTargets = ["SyntaxGen", "syntaxgen"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = true
+doc.verso = true
+
+[[lean_lib]]
+name = "SyntaxGen"
+roots = ["SyntaxGen"]
+
+[[lean_exe]]
+name = "syntaxgen"
+root = "Main"

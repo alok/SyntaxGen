@@ -51,7 +51,7 @@ def nextRand : GenM Nat := do
   set { s with seed := newSeed }
   return newSeed
 
-/-- Get a random number in [0, bound) -/
+/-- Get a random number in {lit}`[0, bound)` -/
 def randBound (bound : Nat) : GenM Nat := do
   if bound == 0 then return 0
   let n ← nextRand

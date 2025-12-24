@@ -230,9 +230,9 @@ initialize genRegistry : SimplePersistentEnvExtension GenEntry (NameMap GenEntry
 def lookupGen (env : Environment) (name : Name) : Option GenEntry :=
   (genRegistry.getState env).find? name
 
-/-! ## The syntax_gen Command
+/-! # The {lit}`syntax_gen` Command
 
-A drop-in replacement for `syntax` that also registers a generator.
+A drop-in replacement for {lit}`syntax` that also registers a generator.
 -/
 
 /-- Parse the stx pattern from syntax command args -/
@@ -264,7 +264,7 @@ def extractPatternFromSyntaxCmd (stx : Syntax) : Option (Array Syntax × Name) :
     patternParts := patternParts.push arg
   return (patternParts, cat)
 
-/-- Syntax for syntax_gen command -/
+/-- Syntax for {lit}`syntax_gen` command -/
 syntax (name := syntaxGenDecl) "syntax_gen" (Command.namedName)? (Command.namedPrio)? stx+ ":" Lean.Parser.ident "as" Lean.Parser.ident : command
 
 @[command_elab syntaxGenDecl]

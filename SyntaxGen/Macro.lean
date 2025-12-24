@@ -12,7 +12,7 @@ namespace SyntaxGen.Macro
 open Lean Parser Elab Command Term Meta
 
 /-!
-## Template-based Generation
+# Template-based Generation
 
 Templates define what a syntax looks like with placeholders for categories.
 -/
@@ -45,12 +45,12 @@ end GenTemplate
 
 /-! ## Predefined Templates -/
 
-/-- List comprehension: [ expr | item in items ] -/
+/-- List comprehension: {lit}`[ expr | item in items ]` -/
 def listCompSimple : GenTemplate := GenTemplate.mk' [
   .inl "[", .inr `term, .inl " | ", .inr `term, .inl " in ", .inr `term, .inl "]"
 ]
 
-/-- List comprehension with filter: [ expr | item in items if pred ] -/
+/-- List comprehension with filter: {lit}`[ expr | item in items if pred ]` -/
 def listCompFilter : GenTemplate := GenTemplate.mk' [
   .inl "[", .inr `term, .inl " | ", .inr `term, .inl " in ", .inr `term,
   .inl " if ", .inr `term, .inl "]"
@@ -119,7 +119,7 @@ elab "#gen_template" nm:Lean.Parser.ident count:(num)? : command => do
       logInfo m!"  • {syntaxToString ex}"
 
 /-!
-## Elaboration-based Template Definition
+# Elaboration-based Template Definition
 
 Users can define templates using an elab rule that captures the structure.
 -/
