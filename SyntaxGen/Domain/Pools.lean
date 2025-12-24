@@ -146,8 +146,16 @@ def genFromPool (pools : DomainPools) (field : DomainPools → Array String) : G
     let name ← randChoice arr
     return mkIdent' name
 
-/-- Generate a type name from the pool -/
-def genType (pools : DomainPools) : GenM Syntax := genFromPool pools (·.types)
+/-- Generate a type name from the pool (simple types only) -/
+def genType (pools : DomainPools) : GenM Syntax := do
+  -- Filter out container types that need arguments
+  let containers := #["List", "Array", "Option", "Sum", "Prod"]
+  let simpleTypes := pools.types.filter (· ∉ containers)
+  if simpleTypes.isEmpty then
+    return mkIdent' "Nat"  -- fallback
+  else
+    let ty ← randChoice simpleTypes
+    return mkIdent' ty
 
 /-- Generate a qualified name from the pool -/
 def genQualifiedName (pools : DomainPools) : GenM Syntax := do

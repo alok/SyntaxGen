@@ -100,11 +100,16 @@ partial def genExists (pools : DomainPools) : GenM Syntax := do
 /-- Generate anonymous constructor: `⟨a, b, c⟩` -/
 def genAnonymousConstructor (pools : DomainPools) : GenM Syntax := do
   let numArgs ← randBound 3  -- 1-3 args
+  let allVars := if pools.variables.isEmpty then #["x", "y", "z"] else pools.variables
+  let mut usedVars : Array String := #[]
   let mut args : Array Syntax := #[]
   for i in [:numArgs + 1] do
-    if i > 0 then args := args.push (mkAtom ",")
-    let arg ← genVariable pools
-    args := args.push arg
+    if i > 0 then args := args.push (mkAtom ", ")
+    -- Pick unique variable
+    let available := allVars.filter (· ∉ usedVars)
+    let varName ← if available.isEmpty then randChoice allVars else randChoice available
+    usedVars := usedVars.push varName
+    args := args.push (mkIdent' varName)
   return Syntax.node .none `null (#[mkAtom "⟨"] ++ args ++ #[mkAtom "⟩"])
 
 /-- Generate show-by expression: `show P by tactic` -/

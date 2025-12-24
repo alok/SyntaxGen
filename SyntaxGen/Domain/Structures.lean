@@ -42,18 +42,21 @@ def genClassName : GenM Syntax := do
 /-- Generate a simple type expression -/
 def genSimpleType (pools : DomainPools) : GenM Syntax := do
   let roll ← randBound 100
-  if roll < 60 then
-    genType pools
+  if roll < 50 then
+    -- Simple types (not containers)
+    let simpleTypes := #["Nat", "Int", "Bool", "String", "Unit", "α", "β", "γ", "A", "B"]
+    let ty ← randChoice simpleTypes
+    return mkIdent' ty
   else if roll < 80 then
-    -- List α, Array β, Option γ
+    -- Container types with argument: List α, Array β, Option γ
     let container ← randChoice #["List", "Array", "Option"]
     let inner ← randChoice #["α", "β", "Nat", "String"]
-    return Syntax.node .none `null #[mkIdent' container, mkIdent' inner]
+    return Syntax.node .none `null #[mkIdent' container, mkAtom " ", mkIdent' inner]
   else
     -- Function type
     let a ← randChoice #["α", "Nat", "String"]
     let b ← randChoice #["β", "Bool", "Unit"]
-    return Syntax.node .none `null #[mkIdent' a, mkAtom "→", mkIdent' b]
+    return Syntax.node .none `null #[mkIdent' a, mkAtom " → ", mkIdent' b]
 
 /-! ## Structure Generator -/
 
