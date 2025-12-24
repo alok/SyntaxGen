@@ -52,7 +52,7 @@ partial def genForall (pools : DomainPools) : GenM Syntax := do
     let ty ← genType pools
     let body ← withDepth (genForallBody pools)
     return Syntax.node .none `null #[
-      mkAtom "∀", mkAtom "(", x, mkAtom ":", ty, mkAtom ")", mkAtom ",", body
+      mkAtom "∀", mkAtom "(", x, mkAtom " :", ty, mkAtom ")", mkAtom ",", body
     ]
 
 /-- Generate a forall chain with multiple binders -/
@@ -70,11 +70,11 @@ partial def genForallChain (pools : DomainPools) : GenM Syntax := do
       -- Alternate between ∀ and → style
       if ← randBool 50 then
         result := Syntax.node .none `null #[
-          mkAtom "∀", mkAtom "(", x, mkAtom ":", ty, mkAtom ")", mkAtom ",", result
+          mkAtom "∀", mkAtom "(", x, mkAtom " :", ty, mkAtom ")", mkAtom ",", result
         ]
       else
         result := Syntax.node .none `null #[
-          mkAtom "(", x, mkAtom ":", ty, mkAtom ")", mkAtom "→", result
+          mkAtom "(", x, mkAtom " :", ty, mkAtom ")", mkAtom "→", result
         ]
     return result
 
@@ -110,8 +110,9 @@ def genAnonymousConstructor (pools : DomainPools) : GenM Syntax := do
 /-- Generate show-by expression: `show P by tactic` -/
 def genShowBy (pools : DomainPools) : GenM Syntax := do
   let prop ← randChoice #["P", "Q", "True", "a = a", "n = n"]
-  let tac ← genTacticName pools
-  return Syntax.node .none `null #[mkAtom "show", mkIdent' prop, mkAtom "by", tac]
+  -- Only use tactics that can close a goal alone
+  let tac ← randChoice #["rfl", "trivial", "assumption", "decide", "simp"]
+  return Syntax.node .none `null #[mkAtom "show", mkIdent' prop, mkAtom "by", mkAtom tac]
 
 /-- Generate proof lambda: `fun h => h.method` -/
 def genProofLambda (pools : DomainPools) : GenM Syntax := do
@@ -125,7 +126,7 @@ def genProofLambda (pools : DomainPools) : GenM Syntax := do
 partial def genTypeAscription (pools : DomainPools) : GenM Syntax := do
   let inner ← genVariable pools
   let ty ← genType pools
-  return Syntax.node .none `null #[mkAtom "(", inner, mkAtom ":", ty, mkAtom ")"]
+  return Syntax.node .none `null #[mkAtom "(", inner, mkAtom " :", ty, mkAtom ")"]
 
 /-! ## Programming-Style Term Patterns -/
 

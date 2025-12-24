@@ -65,11 +65,11 @@ def genStructField (pools : DomainPools) : GenM Syntax := do
 
   if roll < 70 then
     -- Simple field
-    return Syntax.node .none `null #[name, mkAtom ":", ty]
+    return Syntax.node .none `null #[name, mkAtom " :", ty]
   else
     -- Field with default
     let default ← randChoice #["default", "0", "\"\"", "true", "false", "#[]", "none"]
-    return Syntax.node .none `null #[name, mkAtom ":", ty, mkAtom ":=", mkAtom default]
+    return Syntax.node .none `null #[name, mkAtom " :", ty, mkAtom " :=", mkAtom default]
 
 /-- Generate a structure declaration -/
 partial def genStructure (pools : DomainPools) : GenM Syntax := do
@@ -80,7 +80,7 @@ partial def genStructure (pools : DomainPools) : GenM Syntax := do
   -- Type parameters
   let hasTypeParam := roll < 40
   let typeParam := if hasTypeParam then
-    Syntax.node .none `null #[mkAtom "(", mkIdent' "α", mkAtom ":", mkAtom "Type", mkAtom ")"]
+    Syntax.node .none `null #[mkAtom "(", mkIdent' "α", mkAtom " :", mkAtom "Type", mkAtom ")"]
   else
     Syntax.missing
 
@@ -88,7 +88,8 @@ partial def genStructure (pools : DomainPools) : GenM Syntax := do
   if hasTypeParam then fields := fields.push typeParam
   fields := fields.push (mkAtom "where")
 
-  for _ in [:numFields + 1] do
+  for i in [:numFields + 1] do
+    if i > 0 then fields := fields.push (mkAtom ";")
     let field ← genStructField pools
     fields := fields.push field
 
@@ -129,7 +130,7 @@ partial def genInductive (pools : DomainPools) : GenM Syntax := do
 
   let hasTypeParam := roll < 50
   let typeParam := if hasTypeParam then
-    Syntax.node .none `null #[mkAtom "(", mkIdent' "α", mkAtom ":", mkAtom "Type", mkAtom ")"]
+    Syntax.node .none `null #[mkAtom "(", mkIdent' "α", mkAtom " :", mkAtom "Type", mkAtom ")"]
   else
     Syntax.missing
 
@@ -149,7 +150,7 @@ partial def genInductive (pools : DomainPools) : GenM Syntax := do
 def genClassMethod (pools : DomainPools) : GenM Syntax := do
   let name ← genFieldName
   let ty ← genSimpleType pools
-  return Syntax.node .none `null #[name, mkAtom ":", ty]
+  return Syntax.node .none `null #[name, mkAtom " :", ty]
 
 /-- Generate a class declaration -/
 partial def genClass (pools : DomainPools) : GenM Syntax := do
@@ -160,13 +161,14 @@ partial def genClass (pools : DomainPools) : GenM Syntax := do
   -- Class parameter
   let hasTypeParam := roll < 60
   let classParam := if hasTypeParam then
-    Syntax.node .none `null #[mkAtom "(", mkIdent' "α", mkAtom ":", mkAtom "Type", mkAtom ")"]
+    Syntax.node .none `null #[mkAtom "(", mkIdent' "α", mkAtom " :", mkAtom "Type", mkAtom ")"]
   else
-    Syntax.node .none `null #[mkAtom "(", mkIdent' "m", mkAtom ":", mkAtom "Type", mkAtom "→", mkAtom "Type", mkAtom ")"]
+    Syntax.node .none `null #[mkAtom "(", mkIdent' "m", mkAtom " :", mkAtom "Type", mkAtom "→", mkAtom "Type", mkAtom ")"]
 
   let mut result : Array Syntax := #[mkAtom "class", name, classParam, mkAtom "where"]
 
-  for _ in [:numMethods + 1] do
+  for i in [:numMethods + 1] do
+    if i > 0 then result := result.push (mkAtom ";")
     let method ← genClassMethod pools
     result := result.push method
 
@@ -221,15 +223,15 @@ partial def genDef (pools : DomainPools) : GenM Syntax := do
     let ty ← genType pools
     let body ← randChoice #["x", "x + 1", "s.length", "default"]
     return Syntax.node .none `null #[
-      mkAtom "def", name, mkAtom "(", mkIdent' param, mkAtom ":", ty, mkAtom ")",
-      mkAtom ":=", mkAtom body
+      mkAtom "def", name, mkAtom "(", mkIdent' param, mkAtom " :", ty, mkAtom ")",
+      mkAtom " :=", mkAtom body
     ]
   else
     -- def name : T := value
     let ty ← genSimpleType pools
     let value ← randChoice #["default", "0", "\"\"", "true"]
     return Syntax.node .none `null #[
-      mkAtom "def", name, mkAtom ":", ty, mkAtom ":=", mkAtom value
+      mkAtom "def", name, mkAtom " :", ty, mkAtom " :=", mkAtom value
     ]
 
 /-- Generate a theorem declaration -/
@@ -239,7 +241,7 @@ partial def genTheorem (pools : DomainPools) : GenM Syntax := do
   let proof ← randChoice #["rfl", "trivial", "fun x => x", "id"]
 
   return Syntax.node .none `null #[
-    mkAtom "theorem", name, mkAtom ":", mkAtom prop, mkAtom ":=", mkAtom proof
+    mkAtom "theorem", name, mkAtom " :", mkAtom prop, mkAtom " :=", mkAtom proof
   ]
 
 /-! ## Declaration Dispatcher -/

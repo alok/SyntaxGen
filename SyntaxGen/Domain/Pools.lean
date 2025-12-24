@@ -97,7 +97,7 @@ def programmingPools : DomainPools := {
   ]
   tactics := #["rfl", "simp", "decide", "exact", "apply"]
   fields := #["val", "get", "set", "toList", "toArray", "toString"]
-  constructors := #["ok", "error", "none", "some", "nil", "cons", "unit"]
+  constructors := #["ok", "error", "none", "some", "nil", "cons"]
 }
 
 /-- Metaprogramming pools for Lean meta code -/
