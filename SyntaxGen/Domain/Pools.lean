@@ -50,7 +50,7 @@ def proofPools : DomainPools := {
   qualifiedNames := #[
     -- Generic qualified patterns (not library-specific)
     "A.f", "B.g", "T.mk", "T.rec",
-    "α.val", "β.property"
+    "H.val", "P.property", "S.mk", "R.intro"
   ]
   variables := #["n", "m", "k", "i", "j", "a", "b", "c", "x", "y", "z"]
   hypotheses := #["h", "h1", "h2", "h3", "hx", "hy", "hn", "hm", "hp", "hq", "this", "ih"]
@@ -157,10 +157,11 @@ def genQualifiedName (pools : DomainPools) : GenM Syntax := do
     let name ← randChoice pools.qualifiedNames
     return mkIdent' name
   else
-    -- Generate Namespace.function style
-    let ty ← randChoice (if pools.types.isEmpty then #["Foo"] else pools.types)
+    -- Generate Namespace.function style (use PascalCase names, not Greek letters)
+    let namespaces := #["List", "Array", "Option", "Nat", "Int", "Bool", "String", "IO", "T", "M"]
+    let ns ← randChoice namespaces
     let fn ← randChoice (if pools.functions.isEmpty then #["bar"] else pools.functions)
-    return mkIdent' s!"{ty}.{fn}"
+    return mkIdent' s!"{ns}.{fn}"
 
 /-- Generate a variable name from the pool -/
 def genVariable (pools : DomainPools) : GenM Syntax := genFromPool pools (·.variables)
