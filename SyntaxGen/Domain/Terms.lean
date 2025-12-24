@@ -295,51 +295,146 @@ partial def genLambda (pools : DomainPools) : GenM Syntax := do
 
 /-! ## Domain-Specific Term Dispatcher -/
 
-/-- Generate a realistic term for the given domain -/
+/-- Pattern weights for hint-based generation -/
+structure PatternWeights where
+  forall_ : Nat := 0
+  exists_ : Nat := 0
+  anonymous : Nat := 0
+  proofLambda : Nat := 0
+  showBy : Nat := 0
+  doBlock : Nat := 0
+  match_ : Nat := 0
+  methodChain : Nat := 0
+  ifThenElse : Nat := 0
+  letIn : Nat := 0
+  app : Nat := 0
+  lambda : Nat := 0
+  typeAscription : Nat := 0
+  var : Nat := 0
+
+/-- Adjust weight based on hint preferences -/
+def adjustWeight (pattern : String) (base : Nat) : GenM Nat := do
+  let hint ← getHint
+  if hint.prefersPattern pattern then return min (base + 20) 100
+  else if hint.avoidsPattern pattern then return max base 5 - 5  -- reduce but keep some chance
+  else return base
+
+/-- Build weights based on domain and hints -/
+def buildWeights (pools : DomainPools) : GenM PatternWeights := do
+  let hint ← getHint
+  let style := hint.style
+  let complexity := hint.complexity
+
+  -- Base weights depend on domain
+  let mut w : PatternWeights := {}
+
+  match pools.name with
+  | "mathlib" | "math" | "proof" =>
+      w := { w with
+        forall_ := 15, exists_ := 10, anonymous := 10, proofLambda := 10
+        showBy := 10, typeAscription := 10, app := 15, var := 20
+      }
+  | "programming" | "prog" | "io" =>
+      w := { w with
+        doBlock := 20, match_ := 15, methodChain := 15, ifThenElse := 10
+        letIn := 10, app := 10, var := 20
+      }
+  | "meta" | "metaprogramming" | "elab" =>
+      w := { w with
+        doBlock := 15, match_ := 10, methodChain := 15, typeAscription := 10
+        app := 20, var := 30
+      }
+  | _ =>
+      w := { w with
+        app := 20, lambda := 15, ifThenElse := 15, letIn := 15, var := 35
+      }
+
+  -- Adjust for style preference
+  match style with
+  | "functional" =>
+      w := { w with lambda := w.lambda + 15, match_ := w.match_ + 10
+                    doBlock := max w.doBlock 5 - 5 }
+  | "imperative" =>
+      w := { w with doBlock := w.doBlock + 15, letIn := w.letIn + 10
+                    ifThenElse := w.ifThenElse + 10 }
+  | "proof" =>
+      w := { w with forall_ := w.forall_ + 15, exists_ := w.exists_ + 10
+                    showBy := w.showBy + 10, proofLambda := w.proofLambda + 10 }
+  | _ => pure ()
+
+  -- Adjust for complexity: low complexity → more simple patterns
+  if complexity < 30 then
+    w := { w with var := w.var + 30
+                  forall_ := w.forall_ / 2, exists_ := w.exists_ / 2
+                  doBlock := w.doBlock / 2, match_ := w.match_ / 2 }
+  else if complexity > 70 then
+    w := { w with var := max w.var 10 - 10
+                  forall_ := w.forall_ + 10, doBlock := w.doBlock + 10
+                  match_ := w.match_ + 10, methodChain := w.methodChain + 10 }
+
+  return w
+
+/-- Select pattern based on weights -/
+def selectPattern (w : PatternWeights) : GenM String := do
+  let total := w.forall_ + w.exists_ + w.anonymous + w.proofLambda + w.showBy +
+               w.doBlock + w.match_ + w.methodChain + w.ifThenElse + w.letIn +
+               w.app + w.lambda + w.typeAscription + w.var
+  if total == 0 then return "variable"
+
+  let roll ← randBound total
+  let mut cumulative := 0
+
+  cumulative := cumulative + w.forall_
+  if roll < cumulative then return "forall"
+  cumulative := cumulative + w.exists_
+  if roll < cumulative then return "exists"
+  cumulative := cumulative + w.anonymous
+  if roll < cumulative then return "anonymous"
+  cumulative := cumulative + w.proofLambda
+  if roll < cumulative then return "proofLambda"
+  cumulative := cumulative + w.showBy
+  if roll < cumulative then return "showBy"
+  cumulative := cumulative + w.doBlock
+  if roll < cumulative then return "do"
+  cumulative := cumulative + w.match_
+  if roll < cumulative then return "match"
+  cumulative := cumulative + w.methodChain
+  if roll < cumulative then return "methodChain"
+  cumulative := cumulative + w.ifThenElse
+  if roll < cumulative then return "if"
+  cumulative := cumulative + w.letIn
+  if roll < cumulative then return "let"
+  cumulative := cumulative + w.app
+  if roll < cumulative then return "app"
+  cumulative := cumulative + w.lambda
+  if roll < cumulative then return "lambda"
+  cumulative := cumulative + w.typeAscription
+  if roll < cumulative then return "typeAscription"
+
+  return "variable"
+
+/-- Generate a realistic term for the given domain, respecting hints -/
 partial def genDomainTerm (pools : DomainPools) : GenM Syntax := do
   if ← isMaxDepth then
     genVariable pools
   else
-    let roll ← randBound 100
+    let weights ← buildWeights pools
+    let pattern ← selectPattern weights
 
-    match pools.name with
-    | "mathlib" | "math" | "proof" =>
-        -- Math-style patterns
-        if roll < 15 then genForallChain pools
-        else if roll < 25 then genExists pools
-        else if roll < 35 then genAnonymousConstructor pools
-        else if roll < 45 then genProofLambda pools
-        else if roll < 55 then genShowBy pools
-        else if roll < 65 then genTypeAscription pools
-        else if roll < 80 then genApp pools
-        else genVariable pools
-
-    | "programming" | "prog" | "io" =>
-        -- Programming-style patterns
-        if roll < 20 then genDoBlock pools
-        else if roll < 35 then genMatchExpr pools
-        else if roll < 50 then genMethodChain pools
-        else if roll < 60 then genIfThenElse pools
-        else if roll < 70 then genLetIn pools
-        else if roll < 80 then genApp pools
-        else genQualifiedName pools
-
-    | "meta" | "metaprogramming" | "elab" =>
-        -- Meta patterns (similar to programming but more qualified names)
-        if roll < 15 then genDoBlock pools
-        else if roll < 25 then genMatchExpr pools
-        else if roll < 40 then genQualifiedName pools
-        else if roll < 55 then genApp pools
-        else if roll < 65 then genTypeAscription pools
-        else if roll < 75 then genMethodChain pools
-        else genVariable pools
-
-    | _ =>
-        -- Default: mix of patterns
-        if roll < 20 then genApp pools
-        else if roll < 35 then genLambda pools
-        else if roll < 50 then genIfThenElse pools
-        else if roll < 65 then genLetIn pools
-        else genVariable pools
+    match pattern with
+    | "forall" => genForallChain pools
+    | "exists" => genExists pools
+    | "anonymous" => genAnonymousConstructor pools
+    | "proofLambda" => genProofLambda pools
+    | "showBy" => genShowBy pools
+    | "do" => genDoBlock pools
+    | "match" => genMatchExpr pools
+    | "methodChain" => genMethodChain pools
+    | "if" => genIfThenElse pools
+    | "let" => genLetIn pools
+    | "app" => genApp pools
+    | "lambda" => genLambda pools
+    | "typeAscription" => genTypeAscription pools
+    | _ => genVariable pools
 
 end SyntaxGen.Domain
