@@ -6,6 +6,7 @@ import SyntaxGen.Pretty
 import SyntaxGen.Export
 import SyntaxGen.RoundTrip
 import SyntaxGen.Shrink
+import SyntaxGen.Domain
 
 /-!
 # SyntaxGen: Syntax Example Generator for Lean 4
@@ -37,6 +38,12 @@ import SyntaxGen
 
 -- Show shrink tree for debugging
 #syntaxgen_shrink term 42
+
+-- Domain-specific generation (mathlib, programming, meta)
+#syntaxgen_domain mathlib term 5
+#syntaxgen_domain programming term 5
+#syntaxgen_tactic_seq mathlib 3
+#syntaxgen_structure 3
 ```
 
 ## Modules
@@ -49,6 +56,7 @@ import SyntaxGen
 - {lit}`Export`: JSON/CSV export for ML datasets
 - {lit}`RoundTrip`: Parse round-trip testing
 - {lit}`Shrink`: Syntax shrinking for counterexample minimization
+- {lit}`Domain`: Domain-specific generators (mathlib, programming, meta)
 
 ## Plausible Integration
 

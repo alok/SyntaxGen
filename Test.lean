@@ -111,6 +111,27 @@ This could integrate with Plausible for property-based testing:
 - Test parser round-trips: generate → format → parse → compare
 -/
 
+/-! ## Domain-Specific Generation -/
+
+-- Domain-specific term generation (mathlib, programming, meta)
+#syntaxgen_domain mathlib term 5
+#syntaxgen_domain programming term 5
+#syntaxgen_domain meta term 3
+
+-- Forall and exists patterns
+#syntaxgen_domain mathlib forall 3
+#syntaxgen_domain mathlib exists 3
+
+-- Do-notation and match patterns
+#syntaxgen_domain programming do 3
+#syntaxgen_domain programming match 3
+
+-- Multi-step tactic sequences
+#syntaxgen_tactic_seq mathlib 3
+
+-- Structure and inductive declarations
+#syntaxgen_structure 5
+
 /-! ## Summary of Commands -/
 
 -- Basic generation
@@ -135,3 +156,10 @@ This could integrate with Plausible for property-based testing:
 -- #syntaxgen_roundtrip <category> [count]         -- Round-trip test
 -- #syntaxgen_roundtrip_verbose <category> [count] -- Verbose round-trip
 -- #syntaxgen_shrink <category> [seed]             -- Shrink tree
+
+-- Domain-specific generation
+-- #syntaxgen_domain <domain> <category> [count]   -- Domain-aware generation
+--   Domains: mathlib, programming, meta
+--   Categories: term, tactic, forall, exists, do, match, structure
+-- #syntaxgen_tactic_seq <domain> [count] [steps]  -- Multi-step tactic sequences
+-- #syntaxgen_structure [count]                    -- Structure/inductive declarations
