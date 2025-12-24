@@ -21,9 +21,9 @@ def genPredApp (pools : DomainPools) : GenM Syntax := do
   let x ← genVariable pools
   if ← randBool 30 then
     let y ← genVariable pools
-    return Syntax.node .none `null #[mkIdent' pred, x, y]
+    return Syntax.node .none `null #[mkIdent' pred, mkAtom " ", x, mkAtom " ", y]
   else
-    return Syntax.node .none `null #[mkIdent' pred, x]
+    return Syntax.node .none `null #[mkIdent' pred, mkAtom " ", x]
 
 /-- Generate body for forall: either predicate, implication, or nested forall -/
 partial def genForallBody (pools : DomainPools) : GenM Syntax := do
@@ -137,15 +137,18 @@ def genSimpleDoElem (pools : DomainPools) : GenM Syntax := do
     -- let x := e
     let x ← genVariable pools
     let e ← genFunction pools
-    return Syntax.node .none `null #[mkAtom "let", x, mkAtom ":=", e]
+    return Syntax.node .none `null #[mkAtom "let ", x, mkAtom " := ", e]
   else if roll < 70 then
-    -- let x ← e
+    -- let x ← f arg
     let x ← genVariable pools
-    let e ← genQualifiedName pools
-    return Syntax.node .none `null #[mkAtom "let", x, mkAtom "←", e]
+    let f ← genQualifiedName pools
+    let arg ← genVariable pools
+    return Syntax.node .none `null #[mkAtom "let ", x, mkAtom " ← ", f, mkAtom " ", arg]
   else
-    -- function call
-    genQualifiedName pools
+    -- function call with arg
+    let f ← genQualifiedName pools
+    let arg ← genVariable pools
+    return Syntax.node .none `null #[f, mkAtom " ", arg]
 
 /-- Generate do-notation block: `do let x ← f; g x` -/
 partial def genDoBlock (pools : DomainPools) : GenM Syntax := do
@@ -167,7 +170,7 @@ partial def genDoBlock (pools : DomainPools) : GenM Syntax := do
 def genMatchArm (pools : DomainPools) : GenM Syntax := do
   let ctor ← genConstructor pools
   let body ← genVariable pools
-  return Syntax.node .none `null #[mkAtom "|", mkAtom ".", ctor, mkAtom "=>", body]
+  return Syntax.node .none `null #[mkAtom "| .", ctor, mkAtom " => ", body]
 
 /-- Generate match expression: `match x with | .some y => ... | .none => ...` -/
 partial def genMatchExpr (pools : DomainPools) : GenM Syntax := do
@@ -254,7 +257,7 @@ def genFieldProjection (pools : DomainPools) : GenM Syntax := do
 def genInstanceArg (pools : DomainPools) : GenM Syntax := do
   let cls ← randChoice #["Monad", "Functor", "Applicative", "ToString", "Repr", "BEq", "Hashable", "Inhabited"]
   let tyvar ← randChoice #["m", "α", "β", "f"]
-  return Syntax.node .none `null #[mkAtom "[", mkIdent' cls, mkIdent' tyvar, mkAtom "]"]
+  return Syntax.node .none `null #[mkAtom "[", mkIdent' cls, mkAtom " ", mkIdent' tyvar, mkAtom "]"]
 
 /-- Generate function application: `f x` or `f x y` -/
 partial def genApp (pools : DomainPools) : GenM Syntax := do
@@ -265,9 +268,9 @@ partial def genApp (pools : DomainPools) : GenM Syntax := do
     let x ← withDepth (genVariable pools)
     if ← randBool 40 then
       let y ← withDepth (genVariable pools)
-      return Syntax.node .none `null #[f, x, y]
+      return Syntax.node .none `null #[f, mkAtom " ", x, mkAtom " ", y]
     else
-      return Syntax.node .none `null #[f, x]
+      return Syntax.node .none `null #[f, mkAtom " ", x]
 
 /-- Generate lambda: `fun x => body` -/
 partial def genLambda (pools : DomainPools) : GenM Syntax := do
