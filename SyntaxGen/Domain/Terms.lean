@@ -166,11 +166,10 @@ partial def genDoBlock (pools : DomainPools) : GenM Syntax := do
 
     return Syntax.node .none `null stmts
 
-/-- Generate a match arm: `| .ctor => body` -/
-def genMatchArm (pools : DomainPools) : GenM Syntax := do
-  let ctor ← genConstructor pools
+/-- Generate a match arm with given constructor: `| .ctor => body` -/
+def genMatchArmWith (pools : DomainPools) (ctorName : String) : GenM Syntax := do
   let body ← genVariable pools
-  return Syntax.node .none `null #[mkAtom "| .", ctor, mkAtom " => ", body]
+  return Syntax.node .none `null #[mkAtom "| .", mkIdent' ctorName, mkAtom " => ", body]
 
 /-- Generate match expression: `match x with | .some y => ... | .none => ...` -/
 partial def genMatchExpr (pools : DomainPools) : GenM Syntax := do
@@ -180,10 +179,18 @@ partial def genMatchExpr (pools : DomainPools) : GenM Syntax := do
     let scrutinee ← genVariable pools
     let numArms ← randBound 2  -- 1-2 arms
 
-    let mut arms : Array Syntax := #[mkAtom "match", scrutinee, mkAtom "with"]
+    -- Pick unique constructors for each arm
+    let allCtors := if pools.constructors.isEmpty then #["some", "none"] else pools.constructors
+    let mut usedCtors : Array String := #[]
+    let mut arms : Array Syntax := #[mkAtom "match ", scrutinee, mkAtom " with"]
 
     for _ in [:numArms + 1] do
-      let arm ← withDepth (genMatchArm pools)
+      -- Pick a constructor not yet used
+      let available := allCtors.filter (· ∉ usedCtors)
+      if available.isEmpty then break  -- No more unique constructors
+      let ctor ← randChoice available
+      usedCtors := usedCtors.push ctor
+      let arm ← withDepth (genMatchArmWith pools ctor)
       arms := arms.push arm
 
     return Syntax.node .none `null arms
