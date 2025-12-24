@@ -37,89 +37,66 @@ structure DomainPools where
 
 /-! ## Built-in Domain Configurations -/
 
-/-- Mathlib-style pools for mathematical proofs -/
-def mathlibPools : DomainPools := {
-  name := "mathlib"
+/-- Generic proof-style pools (library-agnostic) -/
+def proofPools : DomainPools := {
+  name := "proof"
   types := #[
-    "Nat", "Int", "Real", "Rat", "Complex",
-    "Bool", "Prop", "Type",
-    "List", "Array", "Set", "Finset", "Multiset",
-    "Option", "Sum", "Prod", "Subtype",
-    "Fin", "ZMod", "Polynomial",
-    "Group", "Ring", "Field", "Module", "Algebra"
+    -- Core types
+    "Nat", "Int", "Bool", "Prop", "Type",
+    "List", "Array", "Option", "Sum", "Prod",
+    -- Type variables
+    "α", "β", "γ", "A", "B", "C"
   ]
   qualifiedNames := #[
-    -- Nat lemmas
-    "Nat.add_comm", "Nat.add_assoc", "Nat.mul_comm", "Nat.mul_assoc",
-    "Nat.zero_add", "Nat.add_zero", "Nat.one_mul", "Nat.mul_one",
-    "Nat.succ_ne_zero", "Nat.succ_pos", "Nat.lt_succ_self",
-    -- Int lemmas
-    "Int.add_comm", "Int.neg_neg", "Int.sub_self", "Int.add_neg_cancel",
-    -- List lemmas
-    "List.map_map", "List.filter_filter", "List.length_append",
-    "List.reverse_reverse", "List.mem_append", "List.nil_append",
-    -- Set lemmas
-    "Set.mem_union", "Set.mem_inter", "Set.subset_refl",
-    "Set.inter_comm", "Set.union_comm", "Set.empty_subset",
-    -- General algebra
-    "add_comm", "mul_comm", "add_assoc", "mul_assoc",
-    "zero_add", "add_zero", "one_mul", "mul_one",
-    "neg_neg", "sub_self", "add_neg_cancel"
+    -- Generic qualified patterns (not library-specific)
+    "A.f", "B.g", "T.mk", "T.rec",
+    "α.val", "β.property"
   ]
   variables := #["n", "m", "k", "i", "j", "a", "b", "c", "x", "y", "z"]
   hypotheses := #["h", "h1", "h2", "h3", "hx", "hy", "hn", "hm", "hp", "hq", "this", "ih"]
   functions := #[
-    "id", "comp", "map", "filter", "foldl", "foldr",
-    "length", "size", "card", "sum", "prod",
-    "succ", "pred", "abs", "neg", "inv"
+    "f", "g", "id", "comp", "map", "filter", "fold",
+    "length", "size", "succ", "pred"
   ]
   tactics := #[
-    "rfl", "trivial", "decide", "simp", "ring", "linarith", "omega",
+    -- Core Lean 4 tactics only (no mathlib)
+    "rfl", "trivial", "decide", "simp", "omega",
     "exact", "apply", "intro", "intros", "cases", "induction",
-    "rw", "rewrite", "have", "let", "obtain", "use",
+    "rw", "have", "let", "obtain", "use",
     "constructor", "left", "right", "ext", "funext",
-    "contradiction", "absurd", "exfalso", "by_contra",
-    "assumption", "norm_num", "positivity", "field_simp"
+    "contradiction", "assumption"
   ]
-  fields := #["1", "2", "fst", "snd", "left", "right", "symm", "trans", "mp", "mpr"]
-  constructors := #["zero", "succ", "nil", "cons", "none", "some", "inl", "inr", "true", "false"]
+  fields := #["1", "2", "fst", "snd", "val", "property"]
+  constructors := #["zero", "succ", "nil", "cons", "none", "some", "inl", "inr", "mk"]
 }
+
+/-- Backwards compatibility alias -/
+def mathlibPools : DomainPools := proofPools
 
 /-- Programming-style pools for IO and effects -/
 def programmingPools : DomainPools := {
   name := "programming"
   types := #[
-    "IO", "String", "Char", "UInt8", "UInt32", "UInt64",
-    "Array", "List", "HashMap", "HashSet",
-    "Option", "Except", "EStateM", "ReaderT", "StateT",
-    "Bool", "Nat", "Int", "Float",
-    "FilePath", "Handle", "Task", "BaseIO"
+    -- Core effect types
+    "IO", "String", "Array", "List", "Option", "Except",
+    "Bool", "Nat", "Int", "Unit",
+    -- Monad transformers
+    "StateT", "ReaderT", "ExceptT"
   ]
   qualifiedNames := #[
-    -- IO operations
-    "IO.println", "IO.print", "IO.getLine", "IO.getStdin", "IO.getStdout",
-    "IO.FS.readFile", "IO.FS.writeFile", "IO.FS.Handle.getLine",
-    -- String operations
-    "String.append", "String.length", "String.push", "String.mk",
-    "String.toList", "String.isEmpty", "String.trim", "String.splitOn",
-    -- Array operations
-    "Array.push", "Array.pop", "Array.get!", "Array.set!",
-    "Array.size", "Array.empty", "Array.map", "Array.filter",
-    -- Option/Except
-    "Option.get!", "Option.getD", "Option.map", "Option.bind",
-    "Except.ok", "Except.error", "Except.map",
-    -- Control flow
-    "pure", "bind", "throw", "catch", "try"
+    -- Generic patterns (not Lean stdlib-specific)
+    "M.run", "M.pure", "M.bind",
+    "T.get", "T.set", "T.modify",
+    "A.map", "A.filter", "A.fold"
   ]
-  variables := #["ctx", "env", "state", "config", "result", "input", "output", "data", "buf", "s"]
+  variables := #["ctx", "env", "state", "config", "result", "input", "output", "data", "s", "x"]
   hypotheses := #["h", "ok", "err", "res"]
   functions := #[
     "main", "run", "process", "handle", "parse", "format",
-    "read", "write", "open", "close", "init", "setup",
-    "get", "set", "update", "modify", "with"
+    "read", "write", "get", "set", "update", "modify"
   ]
-  tactics := #["rfl", "simp", "decide", "native_decide", "exact", "apply"]
-  fields := #["val", "ref", "get", "set", "modify", "toList", "toArray", "toString"]
+  tactics := #["rfl", "simp", "decide", "exact", "apply"]
+  fields := #["val", "get", "set", "toList", "toArray", "toString"]
   constructors := #["ok", "error", "none", "some", "nil", "cons", "unit"]
 }
 
@@ -127,46 +104,34 @@ def programmingPools : DomainPools := {
 def metaPools : DomainPools := {
   name := "meta"
   types := #[
-    "Expr", "Syntax", "Name", "Level", "MVarId", "FVarId", "LVarId",
-    "LocalDecl", "ConstantInfo", "Environment", "LocalContext",
-    "MetaM", "TermElabM", "TacticM", "CommandElabM", "CoreM",
-    "Macro", "MacroM", "TSyntax", "Ident"
+    -- Core meta types
+    "Expr", "Syntax", "Name", "Level",
+    -- Monads (generic patterns)
+    "M", "CoreM", "MetaM", "TermElabM", "TacticM"
   ]
   qualifiedNames := #[
-    -- Meta operations
-    "Lean.Meta.inferType", "Lean.Meta.isDefEq", "Lean.Meta.whnf",
-    "Lean.Meta.mkFreshExprMVar", "Lean.Meta.instantiateMVars",
-    -- Elab operations
-    "Lean.Elab.Term.elabTerm", "Lean.Elab.Term.withSynthesize",
-    "Lean.Elab.Tactic.evalTactic", "Lean.Elab.Command.elabCommand",
-    -- Syntax operations
-    "Lean.Syntax.getKind", "Lean.Syntax.getArgs", "Lean.Syntax.isOfKind",
-    "Lean.Syntax.mkApp", "Lean.Syntax.mkLit",
-    -- Environment
-    "Lean.Environment.find?", "Lean.Environment.addDecl",
-    -- Core
-    "Lean.getEnv", "Lean.getRef", "Lean.throwError", "Lean.logInfo"
+    -- Generic meta patterns
+    "M.run", "M.get", "M.set",
+    "Expr.app", "Expr.const", "Syntax.node"
   ]
-  variables := #["stx", "e", "expr", "ty", "type", "ctx", "lctx", "mctx", "env", "name", "info"]
+  variables := #["stx", "e", "expr", "ty", "type", "ctx", "env", "name", "info"]
   hypotheses := #["h", "heq", "hty"]
   functions := #[
-    "elabTerm", "elabType", "elabTactic", "elabCommand",
-    "inferType", "isDefEq", "whnf", "reduce",
-    "mkApp", "mkConst", "mkLambda", "mkForall",
-    "withLocalDecl", "withMVarContext", "withLCtx"
+    "elab", "check", "infer", "reduce", "whnf",
+    "mkApp", "mkConst", "mkLambda", "mkForall"
   ]
   tactics := #["rfl", "simp", "exact", "apply", "trivial"]
-  fields := #["kind", "args", "raw", "getId", "getNat", "getIdent"]
-  constructors := #["app", "const", "fvar", "mvar", "lam", "forallE", "lit", "sort"]
+  fields := #["kind", "args", "raw", "val"]
+  constructors := #["app", "const", "lam", "lit", "node", "atom", "ident"]
 }
 
 /-- Get a pool by name -/
 def getPoolByName (name : String) : DomainPools :=
   match name with
-  | "mathlib" | "math" | "proof" => mathlibPools
+  | "proof" | "math" | "mathlib" => proofPools
   | "programming" | "prog" | "io" => programmingPools
   | "meta" | "metaprogramming" | "elab" => metaPools
-  | _ => mathlibPools  -- default
+  | _ => proofPools  -- default
 
 /-! ## Pool-Based Generators -/
 
