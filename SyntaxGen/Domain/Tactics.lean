@@ -288,6 +288,26 @@ def isClosingTactic (stx : Syntax) : Bool :=
       else false
   | _ => false
 
+/-- Check if a tactic name is preferred by hints -/
+def isTacticPreferred (name : String) : TacGenM Bool := do
+  let hint ← liftGen getHint
+  return hint.prefersPattern name
+
+/-- Check if a tactic name is avoided by hints -/
+def isTacticAvoided (name : String) : TacGenM Bool := do
+  let hint ← liftGen getHint
+  return hint.avoidsPattern name
+
+/-- Check if complexity suggests simple tactics -/
+def prefersSimple : TacGenM Bool := do
+  let hint ← liftGen getHint
+  return hint.complexity < 40
+
+/-- Check if complexity suggests complex tactics -/
+def prefersComplex : TacGenM Bool := do
+  let hint ← liftGen getHint
+  return hint.complexity > 60
+
 /-- Generate the next tactic based on current state and step number -/
 def genNextTactic : TacGenM Syntax := do
   let st ← get
@@ -295,27 +315,86 @@ def genNextTactic : TacGenM Syntax := do
   let _ ← nextStep
   let roll ← liftGen (randBound 100)
 
-  -- Early phase: intro, have, obtain
-  if step < 2 then
-    if roll < 50 then genIntro
-    else if roll < 70 then genHave
-    else if roll < 85 then genObtain
-    else genIntros
+  -- Check hint preferences
+  let isSimple ← prefersSimple
+  let isComplex ← prefersComplex
 
-  -- Mid phase: cases, induction, simp, rw, apply
-  else if step < 4 then
-    if roll < 25 && !st.hypotheses.isEmpty then genCases
-    else if roll < 40 && !st.variables.isEmpty then genInduction
-    else if roll < 60 then genSimp
-    else if roll < 80 then genRewrite
-    else genApply
+  -- Check for avoided tactics
+  let avoidOmega ← isTacticAvoided "omega"
+  let avoidLinarith ← isTacticAvoided "linarith"
+  let avoidSimp ← isTacticAvoided "simp"
+  let avoidCases ← isTacticAvoided "cases"
+  let avoidInduction ← isTacticAvoided "induction"
 
-  -- Late phase: closing tactics
+  -- Check for preferred tactics
+  let preferSimp ← isTacticPreferred "simp"
+  let preferRw ← isTacticPreferred "rw"
+  let preferExact ← isTacticPreferred "exact"
+  let preferCases ← isTacticPreferred "cases"
+  let preferInduction ← isTacticPreferred "induction"
+
+  -- Simple mode: prefer basic tactics
+  if isSimple then
+    if step == 0 then genIntro
+    else if roll < 60 then genClosing
+    else if roll < 80 && !avoidSimp then genSimp
+    else genExact
+
+  -- Complex mode: prefer multi-step tactics
+  else if isComplex then
+    if step < 2 then
+      if roll < 40 then genIntro
+      else if roll < 60 then genHave
+      else if roll < 80 then genObtain
+      else genIntros
+    else if step < 5 then
+      if roll < 20 && !st.hypotheses.isEmpty && !avoidCases then genCases
+      else if roll < 35 && !st.variables.isEmpty && !avoidInduction then genInduction
+      else if roll < 55 && !avoidSimp then genSimp
+      else if roll < 75 then genRewrite
+      else genApply
+    else
+      if roll < 40 then genClosing
+      else if roll < 60 then genExact
+      else genConstructorTactic
+
+  -- Default: balanced tactics with pattern preferences
   else
-    if roll < 50 then genClosing
-    else if roll < 70 then genExact
-    else if roll < 85 then genSimp
-    else genConstructorTactic
+    -- Early phase: intro, have, obtain
+    if step < 2 then
+      if roll < 50 then genIntro
+      else if roll < 70 then genHave
+      else if roll < 85 then genObtain
+      else genIntros
+
+    -- Mid phase: cases, induction, simp, rw, apply
+    else if step < 4 then
+      if preferCases && !st.hypotheses.isEmpty && !avoidCases then genCases
+      else if preferInduction && !st.variables.isEmpty && !avoidInduction then genInduction
+      else if preferSimp && !avoidSimp then genSimp
+      else if preferRw then genRewrite
+      else if roll < 25 && !st.hypotheses.isEmpty && !avoidCases then genCases
+      else if roll < 40 && !st.variables.isEmpty && !avoidInduction then genInduction
+      else if roll < 60 && !avoidSimp then genSimp
+      else if roll < 80 then genRewrite
+      else genApply
+
+    -- Late phase: closing tactics
+    else
+      if preferExact then genExact
+      else if roll < 50 then
+        -- Filter out avoided closing tactics
+        if avoidOmega && avoidLinarith then
+          liftGen (randChoice #[mkAtom "rfl", mkAtom "trivial", mkAtom "decide",
+                                mkAtom "assumption", mkAtom "contradiction", mkAtom "ring"])
+        else if avoidOmega then
+          liftGen (randChoice #[mkAtom "rfl", mkAtom "trivial", mkAtom "linarith"])
+        else if avoidLinarith then
+          liftGen (randChoice #[mkAtom "rfl", mkAtom "trivial", mkAtom "omega"])
+        else genClosing
+      else if roll < 70 then genExact
+      else if roll < 85 && !avoidSimp then genSimp
+      else genConstructorTactic
 
 /-- Generate a coherent tactic sequence -/
 def genTacticSeq (pools : DomainPools) (maxSteps : Nat := 5) : GenM (Array Syntax) := do

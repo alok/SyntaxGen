@@ -249,16 +249,67 @@ partial def genTheorem (pools : DomainPools) : GenM Syntax := do
 
 /-! ## Declaration Dispatcher -/
 
-/-- Generate a random declaration -/
+/-- Check if a declaration type is preferred by hints -/
+def isDeclPreferred (name : String) : GenM Bool := do
+  let hint ← getHint
+  return hint.prefersPattern name
+
+/-- Check if a declaration type is avoided by hints -/
+def isDeclAvoided (name : String) : GenM Bool := do
+  let hint ← getHint
+  return hint.avoidsPattern name
+
+/-- Generate a random declaration (hint-aware) -/
 partial def genDeclaration (pools : DomainPools) : GenM Syntax := do
+  let hint ← getHint
   let roll ← randBound 100
 
-  if roll < 25 then genStructure pools
-  else if roll < 45 then genInductive pools
-  else if roll < 55 then genClass pools
-  else if roll < 65 then genInstance pools
-  else if roll < 75 then genAbbrev pools
-  else if roll < 88 then genDef pools
-  else genTheorem pools
+  -- Check for avoided declaration types
+  let avoidStructure ← isDeclAvoided "structure"
+  let avoidInductive ← isDeclAvoided "inductive"
+  let avoidClass ← isDeclAvoided "class"
+  let avoidInstance ← isDeclAvoided "instance"
+  let avoidDef ← isDeclAvoided "def"
+  let avoidTheorem ← isDeclAvoided "theorem"
+
+  -- Check for preferred declaration types
+  let preferStructure ← isDeclPreferred "structure"
+  let preferInductive ← isDeclPreferred "inductive"
+  let preferClass ← isDeclPreferred "class"
+  let preferDef ← isDeclPreferred "def"
+  let preferTheorem ← isDeclPreferred "theorem"
+
+  -- Simple mode: prefer simple declarations (def, abbrev)
+  if hint.complexity < 40 then
+    if !avoidDef && roll < 60 then genDef pools
+    else if roll < 80 then genAbbrev pools
+    else if !avoidTheorem then genTheorem pools
+    else genDef pools
+
+  -- Complex mode: prefer complex declarations (class, inductive)
+  else if hint.complexity > 60 then
+    if !avoidClass && roll < 30 then genClass pools
+    else if !avoidInductive && roll < 60 then genInductive pools
+    else if !avoidStructure && roll < 80 then genStructure pools
+    else if !avoidInstance then genInstance pools
+    else genDef pools
+
+  -- Default: balanced with pattern preferences
+  else
+    -- Check pattern preferences first
+    if preferStructure && !avoidStructure then genStructure pools
+    else if preferInductive && !avoidInductive then genInductive pools
+    else if preferClass && !avoidClass then genClass pools
+    else if preferDef && !avoidDef then genDef pools
+    else if preferTheorem && !avoidTheorem then genTheorem pools
+    -- Fall back to random selection respecting avoidance
+    else if roll < 25 && !avoidStructure then genStructure pools
+    else if roll < 45 && !avoidInductive then genInductive pools
+    else if roll < 55 && !avoidClass then genClass pools
+    else if roll < 65 && !avoidInstance then genInstance pools
+    else if roll < 75 then genAbbrev pools
+    else if roll < 88 && !avoidDef then genDef pools
+    else if !avoidTheorem then genTheorem pools
+    else genAbbrev pools  -- Fallback
 
 end SyntaxGen.Domain

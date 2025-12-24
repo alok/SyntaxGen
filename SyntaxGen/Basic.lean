@@ -30,11 +30,38 @@ structure GenHint where
   deriving Repr, Inhabited
 
 /-- Parse a hint string into GenHint.
-    Format: "complexity:70 style:proof verbose patterns:quantified,match" -/
+    Format: "complexity:70 style:proof verbose patterns:quantified,match"
+
+    Theme presets (combine multiple settings):
+    - "beginner" : simple patterns, low complexity, common constructs
+    - "advanced" : complex patterns, high nesting, all features
+    - "mathlib"  : proof-oriented with forall, exists, show
+    - "stdlib"   : programming-oriented with do, match, method chains
+    - "dsl"      : custom syntax patterns, type ascriptions
+    - "training" : diverse mix for ML training data
+-/
 def parseGenHint (s : String) : GenHint :=
   let words := s.splitOn " " |>.filter (· != "")
   words.foldl (init := {}) fun hint w =>
-    if w == "simple" then { hint with complexity := 20 }
+    -- Theme presets
+    if w == "beginner" then
+      { hint with complexity := 15, verbosity := 30, style := "any"
+                  patterns := "variable,app,if", avoid := "forall,exists,do" }
+    else if w == "advanced" then
+      { hint with complexity := 85, verbosity := 70, style := "any"
+                  patterns := "forall,exists,match,do,methodChain" }
+    else if w == "mathlib" then
+      { hint with complexity := 60, style := "proof"
+                  patterns := "forall,exists,anonymous,showBy,proofLambda" }
+    else if w == "stdlib" then
+      { hint with complexity := 50, style := "imperative"
+                  patterns := "do,match,methodChain,let,if" }
+    else if w == "dsl" then
+      { hint with complexity := 40, patterns := "typeAscription,anonymous,match" }
+    else if w == "training" then
+      { hint with complexity := 50, verbosity := 50 }  -- diverse defaults
+    -- Simple keywords
+    else if w == "simple" then { hint with complexity := 20 }
     else if w == "complex" then { hint with complexity := 80 }
     else if w == "minimal" then { hint with complexity := 10, verbosity := 20 }
     else if w == "verbose" then { hint with verbosity := 80 }
@@ -42,6 +69,7 @@ def parseGenHint (s : String) : GenHint :=
     else if w == "functional" then { hint with style := "functional" }
     else if w == "imperative" then { hint with style := "imperative" }
     else if w == "proof" then { hint with style := "proof" }
+    -- Parameterized options
     else if w.startsWith "complexity:" then
       match (w.drop 11).toNat? with
       | some n => { hint with complexity := min n 100 }
@@ -53,9 +81,15 @@ def parseGenHint (s : String) : GenHint :=
     else if w.startsWith "style:" then
       { hint with style := (w.drop 6).toString }
     else if w.startsWith "patterns:" then
-      { hint with patterns := (w.drop 9).toString }
+      -- Merge patterns if already set
+      let newPatterns := (w.drop 9).toString
+      if hint.patterns.isEmpty then { hint with patterns := newPatterns }
+      else { hint with patterns := s!"{hint.patterns},{newPatterns}" }
     else if w.startsWith "avoid:" then
-      { hint with avoid := (w.drop 6).toString }
+      -- Merge avoids if already set
+      let newAvoid := (w.drop 6).toString
+      if hint.avoid.isEmpty then { hint with avoid := newAvoid }
+      else { hint with avoid := s!"{hint.avoid},{newAvoid}" }
     else hint
 
 /-- Check if a pattern is preferred -/
@@ -389,7 +423,16 @@ partial def genFromCat (cat : Name) : GenM Syntax := do
 
 /-- Run generator with config -/
 def runGen (config : GenConfig) (m : GenM α) (hint : GenHint := {}) : Option α :=
-  let state : GenState := { seed := config.seed, config := config, hint := hint }
+  -- Adjust maxDepth based on complexity hint
+  let adjustedMaxDepth :=
+    if hint.complexity < 30 then
+      max 2 (config.maxDepth - 2)  -- Simple: shallower
+    else if hint.complexity > 70 then
+      config.maxDepth + 2          -- Complex: deeper
+    else
+      config.maxDepth              -- Moderate: unchanged
+  let adjustedConfig := { config with maxDepth := adjustedMaxDepth }
+  let state : GenState := { seed := config.seed, config := adjustedConfig, hint := hint }
   (m.run state).run |>.map Prod.fst
 
 /-- Generate multiple examples -/

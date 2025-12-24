@@ -210,4 +210,192 @@ elab "#syntaxgen_structure" count:(num)? : command => do
   for i in [:results.size] do
     logInfo m!"  {i + 1}. {results[i]!}"
 
+/-! ## Commands for Understanding Syntax -/
+
+open Elab Command Meta in
+/-- Explore all pattern types systematically: `#syntaxgen_explore proof`
+    Shows 2 examples of each pattern type to build intuition for the syntax.
+-/
+elab "#syntaxgen_explore" domain:ident : command => do
+  let domainName := domain.getId.toString
+  let pools := getPoolByName domainName
+
+  -- All pattern types with descriptions and direct generator functions
+  let patterns : Array (String × String × (DomainPools → GenM Syntax)) := #[
+    ("forall", "Universal quantification: ∀ (x : T), body", genForallChain),
+    ("exists", "Existential quantification: ∃ x, P x", genExists),
+    ("anonymous", "Anonymous constructors: ⟨a, b, c⟩", genAnonymousConstructor),
+    ("lambda", "Lambda expressions: fun x => e", genLambda),
+    ("proofLambda", "Proof lambdas: fun h => h.property", genProofLambda),
+    ("showBy", "Show-by expressions: show P by tactic", genShowBy),
+    ("do", "Do-notation blocks: do let x ← f; g x", genDoBlock),
+    ("match", "Pattern matching: match x with | .a => ...", genMatchExpr),
+    ("methodChain", "Method chains: x.f.g |>.h", genMethodChain),
+    ("if", "Conditionals: if c then t else e", genIfThenElse),
+    ("let", "Let bindings: let x := e; body", genLetIn),
+    ("app", "Function application: f x y", genApp),
+    ("typeAscription", "Type ascriptions: (e : T)", genTypeAscription)
+  ]
+
+  logInfo m!"=== Exploring {domainName} syntax patterns ===\n"
+
+  let mut patternSeed : Nat := 42
+
+  for (pattern, desc, gen) in patterns do
+    let mut examples : Array String := #[]
+    let mut seed := patternSeed
+
+    for _ in [:8] do  -- Attempts to find unique examples
+      if examples.size >= 2 then break
+      let cfg : SyntaxGen.GenConfig := { seed := seed, maxDepth := 4 }
+      seed := seed + 7919
+      -- Directly call the specific generator
+      match SyntaxGen.runGen cfg (gen pools) with
+      | some stx =>
+          let formatted := cleanSpaces (prettyPrint (normalize stx))
+          if !formatted.isEmpty && !examples.contains formatted then
+            examples := examples.push formatted
+      | none => pure ()
+
+    patternSeed := patternSeed + 100000  -- Different seed range per pattern
+
+    if !examples.isEmpty then
+      logInfo m!"• {pattern} ({desc}):"
+      for ex in examples do
+        logInfo m!"    {ex}"
+
+open Elab Command Meta in
+/-- Progressive complexity curriculum: `#syntaxgen_curriculum proof 5`
+    Generates examples from simple to complex to build understanding.
+-/
+elab "#syntaxgen_curriculum" domain:ident perLevel:(num)? : command => do
+  let domainName := domain.getId.toString
+  let pools := getPoolByName domainName
+  let cnt := match perLevel with
+    | some n => n.getNat
+    | none => 3
+
+  let levels := #[
+    ("Level 1: Atoms", "minimal", 2),
+    ("Level 2: Simple", "simple", 3),
+    ("Level 3: Moderate", "", 4),
+    ("Level 4: Complex", "complex", 5),
+    ("Level 5: Nested", "complex patterns:forall,match,do", 6)
+  ]
+
+  logInfo m!"=== {domainName} syntax curriculum ===\n"
+
+  for (levelName, hintStr, depth) in levels do
+    let genHint := SyntaxGen.parseGenHint hintStr
+    let config : SyntaxGen.GenConfig := { seed := 42, maxDepth := depth }
+    let mut examples : Array String := #[]
+    let mut seed := config.seed
+
+    for _ in [:cnt * 3] do
+      if examples.size >= cnt then break
+      let cfg := { config with seed := seed }
+      seed := seed + 7919
+      match SyntaxGen.runGen cfg (genDomainTerm pools) genHint with
+      | some stx =>
+          let formatted := cleanSpaces (prettyPrint (normalize stx))
+          if !formatted.isEmpty && !examples.contains formatted then
+            examples := examples.push formatted
+      | none => pure ()
+
+    logInfo m!"{levelName}:"
+    for ex in examples do
+      logInfo m!"  {ex}"
+    logInfo m!""
+
+open Elab Command Meta in
+/-- Generate training batch: `#syntaxgen_batch proof term 100 seed:12345`
+    Generates large batches suitable for ML training with reproducible seeds.
+-/
+elab "#syntaxgen_batch" domain:ident cat:ident count:(num)? seedOpt:(str)? : command => do
+  let domainName := domain.getId.toString
+  let catName := cat.getId
+  let cnt := match count with
+    | some n => n.getNat
+    | none => 50
+  let baseSeed := match seedOpt with
+    | some s =>
+        let seedStr := s.getString
+        if seedStr.startsWith "seed:" then
+          (seedStr.drop 5).toNat?.getD 42
+        else seedStr.toNat?.getD 42
+    | none => 42
+
+  let pools := getPoolByName domainName
+  let config : SyntaxGen.GenConfig := { seed := baseSeed, maxDepth := 5 }
+  let mut results : Array String := #[]
+  let mut seed := baseSeed
+
+  -- Use diverse hints to get variety
+  let hints := #["", "simple", "complex", "functional", "imperative", "proof"]
+
+  for _ in [:cnt * 3] do
+    if results.size >= cnt then break
+    let hintIdx := seed % hints.size
+    let genHint := SyntaxGen.parseGenHint hints[hintIdx]!
+    let cfg := { config with seed := seed }
+    seed := seed + 7919
+
+    let gen := match catName with
+      | `term => genDomainTerm pools
+      | `tactic => genFormattedTacticSeq pools 5
+      | `structure | `decl => genDeclaration pools
+      | _ => genDomainTerm pools
+
+    match SyntaxGen.runGen cfg gen genHint with
+    | some stx =>
+        let formatted := cleanSpaces (prettyPrint (normalize stx))
+        if !formatted.isEmpty && !results.contains formatted then
+          results := results.push formatted
+    | none => pure ()
+
+  logInfo m!"=== Training batch: {results.size} unique {catName} examples ==="
+  logInfo m!"Domain: {domainName}, Seed: {baseSeed}\n"
+  for i in [:results.size] do
+    logInfo m!"{results[i]!}"
+
+open Elab Command Meta in
+/-- Side-by-side style comparison: `#syntaxgen_contrast proof`
+    Shows how the same concepts look in different styles.
+-/
+elab "#syntaxgen_contrast" domain:ident : command => do
+  let domainName := domain.getId.toString
+  let pools := getPoolByName domainName
+
+  let styles := #[
+    ("Minimal/Terse", "minimal terse"),
+    ("Functional", "functional"),
+    ("Imperative", "imperative"),
+    ("Proof-oriented", "proof"),
+    ("Complex/Verbose", "complex verbose")
+  ]
+
+  logInfo m!"=== Style contrast for {domainName} ===\n"
+
+  for (styleName, hintStr) in styles do
+    let genHint := SyntaxGen.parseGenHint hintStr
+    let config : SyntaxGen.GenConfig := { seed := 42, maxDepth := 5 }
+    let mut examples : Array String := #[]
+    let mut seed := config.seed
+
+    for _ in [:8] do
+      if examples.size >= 3 then break
+      let cfg := { config with seed := seed }
+      seed := seed + 7919
+      match SyntaxGen.runGen cfg (genDomainTerm pools) genHint with
+      | some stx =>
+          let formatted := cleanSpaces (prettyPrint (normalize stx))
+          if !formatted.isEmpty && !examples.contains formatted then
+            examples := examples.push formatted
+      | none => pure ()
+
+    logInfo m!"▸ {styleName}:"
+    for ex in examples do
+      logInfo m!"    {ex}"
+    logInfo m!""
+
 end SyntaxGen.Domain

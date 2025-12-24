@@ -312,12 +312,37 @@ structure PatternWeights where
   typeAscription : Nat := 0
   var : Nat := 0
 
-/-- Adjust weight based on hint preferences -/
-def adjustWeight (pattern : String) (base : Nat) : GenM Nat := do
-  let hint ← getHint
-  if hint.prefersPattern pattern then return min (base + 20) 100
-  else if hint.avoidsPattern pattern then return max base 5 - 5  -- reduce but keep some chance
-  else return base
+/-- Pattern name to weight field mapping -/
+def patternNames : Array (String × String) := #[
+  ("forall", "forall_"), ("exists", "exists_"), ("anonymous", "anonymous"),
+  ("proofLambda", "proofLambda"), ("showBy", "showBy"), ("do", "doBlock"),
+  ("match", "match_"), ("methodChain", "methodChain"), ("if", "ifThenElse"),
+  ("let", "letIn"), ("app", "app"), ("lambda", "lambda"),
+  ("typeAscription", "typeAscription"), ("variable", "var")
+]
+
+/-- Adjust a single weight based on prefer/avoid -/
+def adjustSingleWeight (hint : GenHint) (pattern : String) (base : Nat) : Nat :=
+  if hint.prefersPattern pattern then min (base * 3 + 20) 100  -- Strong boost
+  else if hint.avoidsPattern pattern then 0  -- Completely disable avoided patterns
+  else base
+
+/-- Apply pattern preferences/avoidances to weights -/
+def applyPatternHints (hint : GenHint) (w : PatternWeights) : PatternWeights :=
+  { forall_ := adjustSingleWeight hint "forall" w.forall_
+    exists_ := adjustSingleWeight hint "exists" w.exists_
+    anonymous := adjustSingleWeight hint "anonymous" w.anonymous
+    proofLambda := adjustSingleWeight hint "proofLambda" w.proofLambda
+    showBy := adjustSingleWeight hint "showBy" w.showBy
+    doBlock := adjustSingleWeight hint "do" w.doBlock
+    match_ := adjustSingleWeight hint "match" w.match_
+    methodChain := adjustSingleWeight hint "methodChain" w.methodChain
+    ifThenElse := adjustSingleWeight hint "if" w.ifThenElse
+    letIn := adjustSingleWeight hint "let" w.letIn
+    app := adjustSingleWeight hint "app" w.app
+    lambda := adjustSingleWeight hint "lambda" w.lambda
+    typeAscription := adjustSingleWeight hint "typeAscription" w.typeAscription
+    var := adjustSingleWeight hint "variable" w.var }
 
 /-- Build weights based on domain and hints -/
 def buildWeights (pools : DomainPools) : GenM PatternWeights := do
@@ -371,6 +396,9 @@ def buildWeights (pools : DomainPools) : GenM PatternWeights := do
     w := { w with var := max w.var 10 - 10
                   forall_ := w.forall_ + 10, doBlock := w.doBlock + 10
                   match_ := w.match_ + 10, methodChain := w.methodChain + 10 }
+
+  -- Apply explicit pattern preferences and avoidances
+  w := applyPatternHints hint w
 
   return w
 
