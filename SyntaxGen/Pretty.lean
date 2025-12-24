@@ -44,13 +44,18 @@ where
           | (some '(', _) => false
           | (some '[', _) => false
           | (some '{', _) => false
+          | (some '⟨', _) => false  -- Angle bracket open
+          | (some '.', _) => false  -- Dot notation (no space after .)
+          | (some '|', some '.') => false  -- Match arm: | .ctor
           | (_, some ')') => false
           | (_, some ']') => false
           | (_, some '}') => false
+          | (_, some '⟩') => false  -- Angle bracket close
           | (_, some ',') => false
           | (_, some ';') => false
           | (some ' ', _) => false
           | (_, some ' ') => false
+          | (_, some '.') => false  -- No space before dot
           | _ => true
         if needSpace then result := result ++ " "
         result := result ++ p
@@ -59,6 +64,17 @@ where
 /-- Compact single-line format -/
 def compact (stx : Syntax) : String :=
   prettyPrint stx |>.replace "  " " "
+
+/-- Clean up spacing artifacts -/
+def cleanSpaces (s : String) : String :=
+  s |>.replace "  " " "      -- Double spaces
+    |>.replace ", ," ", "    -- Double commas
+    |>.replace " ," ","      -- Space before comma
+    |>.replace "( " "("      -- Space after open paren
+    |>.replace " )" ")"      -- Space before close paren
+    |>.replace "⟨ " "⟨"      -- Space after angle open
+    |>.replace " ⟩" "⟩"      -- Space before angle close
+    |>.replace ":=  " ":= "  -- Double space after :=
 
 /-- Normalize syntax by removing redundant null nodes -/
 partial def normalize (stx : Syntax) : Syntax :=

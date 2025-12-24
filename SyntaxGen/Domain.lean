@@ -8,10 +8,11 @@ import SyntaxGen.Domain.Pools
 import SyntaxGen.Domain.Terms
 import SyntaxGen.Domain.Tactics
 import SyntaxGen.Domain.Structures
+import SyntaxGen.Pretty
 
 namespace SyntaxGen.Domain
 
-open Lean
+open Lean SyntaxGen.Pretty
 
 /-! ## Convenience Commands -/
 
@@ -47,7 +48,7 @@ elab "#syntaxgen_domain" domain:ident cat:ident count:(num)? : command => do
 
     match SyntaxGen.runGen cfg gen with
     | some stx =>
-        let formatted := toString stx
+        let formatted := cleanSpaces (prettyPrint (normalize stx))
         if !formatted.isEmpty then results := results.push formatted
     | none => pure ()
 
@@ -79,7 +80,7 @@ elab "#syntaxgen_tactic_seq" domain:ident count:(num)? steps:(num)? : command =>
 
     match SyntaxGen.runGen cfg (genFormattedTacticSeq pools maxSteps) with
     | some stx =>
-        let formatted := toString stx
+        let formatted := cleanSpaces (prettyPrint (normalize stx))
         if !formatted.isEmpty then results := results.push formatted
     | none => pure ()
 
@@ -107,7 +108,7 @@ elab "#syntaxgen_structure" count:(num)? : command => do
 
     match SyntaxGen.runGen cfg (genDeclaration pools) with
     | some stx =>
-        let formatted := toString stx
+        let formatted := cleanSpaces (prettyPrint (normalize stx))
         if !formatted.isEmpty then results := results.push formatted
     | none => pure ()
 
